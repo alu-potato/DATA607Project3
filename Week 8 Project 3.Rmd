@@ -19,7 +19,7 @@ For our project, we are utilizing a relational database hosted in Azure. Specifi
 
 #### Setting Up a Keyring and Creating the Connection
 
-The first step to setting up our MySQL database is to connect to it. Here we utilize the odbc package in combination with the dbi package to connect to our cloud hosted instance of Azure SQL. To keep our SQL Database secure, We also utilize the keyring package in order to ensure that the password never gets stored as code.
+The first step to setting up our MySQL database is to connect to it. Here we utilize the odbc package in combination with the dbi package to connect to our cloud hosted instance of Azure SQL. To keep our SQL Database secure, We also utilize the keyring package in order to ensure that the password never gets stored as code. Please note that to connect through odbc to Azure SQL Server, OBDC Driver 18 for SQL Server is required. This can be downloaded here: https://learn.microsoft.com/en-us/sql/connect/odbc/download-odbc-driver-for-sql-server?view=sql-server-ver16.
 
 ```{r connect to Azure SQL Server}
 library(tidyverse)
