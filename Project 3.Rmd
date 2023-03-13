@@ -127,12 +127,14 @@ query5 <- r"(
     work_unit VARCHAR(40),
     posting_date VARCHAR(15),
     posting_updated VARCHAR(15),
-    FOREIGN KEY (title_code_num) REFERENCES nyc_jobs_codes(title_code_num), nyc_jobs_agencies(work_unit),
+    FOREIGN KEY (title_code_num) REFERENCES nyc_jobs_codes(title_code_num), 
+    FOREIGN KEY (work_unit) REFERENCES nyc_jobs_agencies(work_unit),
+    FOREIGN KEY (job_id) REFERENCES nyc_jobs_specifics(job_id)
     PRIMARY KEY (job_id));
 )"
 
 
-query_combination <- c(query, query1, query2, query3, query4)
+query_combination <- c(query1, query2, query3, query4, query5)
 for (query in query_combination) {
   dbExecute(my_connection,query)
   Sys.sleep(0.5)
