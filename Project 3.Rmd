@@ -96,7 +96,7 @@ query3 <- r"(
 
 query4 <- r"(
   CREATE TABLE nyc_jobs_specifics(
-    job_id INT
+    job_id INT,
     posting_type VARCHAR(12),
     job_description VARCHAR(MAX),
     minimum_qual VARCHAR(MAX),
@@ -114,6 +114,7 @@ query4 <- r"(
 
 query5 <- r"(
   CREATE TABLE nyc_jobs_basics( 
+    job_id INT,
     num_positions INT,
     business_title VARCHAR(150),
     title_code_num VARCHAR(10),
@@ -129,7 +130,7 @@ query5 <- r"(
     posting_updated VARCHAR(15),
     FOREIGN KEY (title_code_num) REFERENCES nyc_jobs_codes(title_code_num), 
     FOREIGN KEY (work_unit) REFERENCES nyc_jobs_agencies(work_unit),
-    FOREIGN KEY (job_id) REFERENCES nyc_jobs_specifics(job_id)
+    FOREIGN KEY (job_id) REFERENCES nyc_jobs_specifics(job_id),
     PRIMARY KEY (job_id));
 )"
 
@@ -183,13 +184,19 @@ nyc_jobs_raw[is.na(nyc_jobs_raw)] <- ""
 nyc_jobs_raw <- nyc_jobs_raw[!duplicated(nyc_jobs_raw$job_id),]
 nyc_jobs_codes <- nyc_jobs_raw |> #Use this as this an outline for each new dataframe table
   select(c('civil_service_title','title_classification','level','title_code_num'))
+nyc_jobs_codes <- nyc_jobs_codes[!duplicated(nyc_jobs_codes$title_code_num),]
 nyc_jobs_agencies <- nyc_jobs_raw |> 
   select(c('agency', 'agency_location', 'work_unit'))
+# nyc_jobs_agencies <- nyc_jobs_agencies[!duplicated(nyc_jobs_agencies$work_unit),]
+nyc_jobs_agencies <- nyc_jobs_agencies[!duplicated(tolower(nyc_jobs_agencies$work_unit)),]
+nyc_jobs_agencies
 nyc_jobs_specifics <- nyc_jobs_raw |> 
   select(c('job_id', 'posting_type', 'job_description', 'minimum_qual', 'preferred_skills', 'additional_information', 'to_apply', 'shift', 'work_location', 'recruitment_contact', 'residency_requirement', 'post_until', 'process_date'))
+nyc_jobs_specifics <- nyc_jobs_specifics[!duplicated(nyc_jobs_specifics$job_id),]
 nyc_jobs_basics <- nyc_jobs_raw |> 
   select(c('job_id', 'num_positions', 'business_title', 'title_code_num', 'level', 'job_category', 'full_time_indicator', 'career_level', 'salary_range_from', 'salary_range_to', 'salary_frequency', 'work_unit', 'posting_date', 'posting_updated'))
-  
+nyc_jobs_basics <- nyc_jobs_basics[!duplicated(nyc_jobs_basics$job_id),]  
+
 my_connection <- dbConnect(drv = odbc::odbc(),
                            Driver = "ODBC Driver 18 for SQL Server",
                            server = "tcp:data607project3server.database.windows.net,1433",
@@ -198,9 +205,49 @@ my_connection <- dbConnect(drv = odbc::odbc(),
                            pwd = key_get("Project3SQL","Overview8909"),
                            encoding = "latin1"
                            )
-dbAppendTable(my_connection,"nyc_jobs",nyc_jobs_raw)
+#dbAppendTable(my_connection,"nyc_jobs",nyc_jobs_raw)
+dbAppendTable(my_connection,"nyc_jobs_codes", nyc_jobs_codes)
+Sys.sleep(0.5)
+dbAppendTable(my_connection,"nyc_jobs_agencies", nyc_jobs_agencies)
+Sys.sleep(0.5)
+dbAppendTable(my_connection,"nyc_jobs_specifics", nyc_jobs_specifics) 
+Sys.sleep(0.5)
+dbAppendTable(my_connection,"nyc_jobs_basics", nyc_jobs_basics)
+Sys.sleep(0.5)
 dbDisconnect(my_connection)
 ```
+
+```{r}
+# new column names
+col_names <- c("Job_ID", "Agency", "Posting_Type", "Number_of_Positions", "Business_Title", 
+               "Civil_Service_Title", "Title_Classification", "Title_Code_No", "Level","Job_Category",
+               "Employment_Type", "Career_Level", "Salary_From", "Salary_To", "Salary_Frequency",
+               "Location","Division_Work_Unit","Job_Description", "Minimum_Qualification", "Preferred_Skills",
+               "Additional_Information", "To_Apply", "Hours_Shift", "Work_Location_1", "Recruitment_Contact",
+               "Residency_Requirement", "Posting_Date", "Post_Until", "Posting_Updated", "Process_Date")
+# updated df
+colnames(nyc_jobs_raw) <- col_names   
+nyc_jobs_raw
+```
+
+ 
+```{r}
+nyc_jobs_raw <- nyc_jobs_raw |> 
+    mutate(Title_Code_No = as.numeric(Title_Code_No), Level = as.numeric(Level)) |> 
+    mutate_all(~ ifelse(. == "", NA, .)) |> 
+    mutate(Job_Description = str_to_title(str_replace_all(Job_Description, "[^[:alnum:][:space:]]", ""))) |>
+    mutate(Job_Description = str_replace_all(Job_Description, "â", "'")) |> 
+    mutate(Job_Description = str_remove_all(Job_Description, "\\t|Â")) |> 
+    mutate(Preferred_Skills = str_to_title(str_replace_all(Preferred_Skills, "[^[:alnum:][:space:]]", ""))) |> 
+    mutate(Preferred_Skills = str_remove_all(Preferred_Skills, "Â\\t|\\t|Â|â")) |> 
+    mutate(Minimum_Qualification = str_replace_all(Minimum_Qualification, "â|\u0080|\u0099", "")) |>
+    mutate(Salary_From = round(Salary_From,2)) |>
+    mutate(Salary_To = round(Salary_To,2))  
+nyc_jobs_raw
+```
+ 
+ 
+ 
  
  
 #### Step 4
