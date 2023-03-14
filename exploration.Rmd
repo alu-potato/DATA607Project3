@@ -1,0 +1,31 @@
+---
+title: 'Project 3: Data Exploration'
+author: "Alice Ding"
+date: "2023-03-14"
+output: pdf_document
+---
+
+```{r connect to Azure SQL Server}
+library(tidyverse)
+library(odbc)
+library(DBI)
+library(keyring)
+
+if (!("Overview8909" %in% as_vector(key_list()[2]))) {
+  key_set("Project3SQL","Overview8909")
+}
+```
+
+#### Configuring Database Tables
+
+As this is a fresh Azure SQL server instance, we want to create the tables that will hold the information of our dataset. We initialize the tables with our queries.
+
+```{r Configuring Database Tables}
+my_connection <- dbConnect(drv = odbc::odbc(),
+                           Driver = "ODBC Driver 17 for SQL Server",
+                           server = "tcp:data607project3server.database.windows.net,1433",
+                           database = "Data 607 Project 3 Database",
+                           uid = "Overview8909",
+                           pwd = key_get("Project3SQL","Overview8909"),
+                           encoding = "latin1"
+                           )
